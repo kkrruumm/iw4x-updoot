@@ -19,6 +19,10 @@ If something broke warranting a reinstall, or if you want to wipe this and iw4x 
 
 You may then run `./iw4x-updoot.sh` again to perform an installation as if you had just installed MW2.
 
+- Updating:
+
+Just run `./iw4x-updoot.sh`, the same as installation- this script knows where it is because it knows where it isn't.
+
 # What about launching the game?
 Add iw4x.exe as a non-steam game via your Steam client, launch from there as per usual with iw4x.
 
