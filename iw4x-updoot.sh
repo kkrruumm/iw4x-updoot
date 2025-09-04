@@ -93,7 +93,8 @@ rawfiles_download() {
 
 
     info "comparing iw4x-rawfiles checksums..."
-    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("zip")) .digest' | sed 's/sha256://')
+    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("zip")) .digest')
+    checksum="${checksum#sha256:}"
     local_checksum=$(sha256sum "${PWD}/release.zip" | cut -d " " -f 1)
 
     [ "$local_checksum" != "$checksum" ] &&
@@ -108,7 +109,8 @@ client_download() {
         die "failed to download iw4x-client: $client_url"
 
     info "comparing iw4x-client checksums..."
-    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("dll")) .digest' | sed 's/sha256://')
+    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("dll")) .digest')
+    checksum="${checksum#sha256:}"
     local_checksum=$(sha256sum "${PWD}/iw4x.dll" | cut -d " " -f 1)
 
     [ "$local_checksum" != "$checksum" ] &&
@@ -144,7 +146,7 @@ else
         unset temp
 
         # add new client version to metadata
-        printf "%s\n" "client_version: ${client_version}" > "$metadata_file" ||
+        printf "%s\n" "client_version: ${client_version}" >> "$metadata_file" ||
             die "failed to add new client_version: ${client_version} to metadata file: ${metadata_file}"
 
         # delete old client
@@ -190,7 +192,7 @@ else
          unset temp
 
          # add new ver to metadata
-         printf "%s\n" "rawfiles_version: ${rawfiles_version}" > "$metadata_file" ||
+         printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
              die "failed to add new rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
 
          # the most simple and catch-all way to update this is to just wipe the old rawfiles and place the new ones

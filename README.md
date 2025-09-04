@@ -11,7 +11,10 @@ You should probably be using the official client; this is here to ease my own su
 # Usage
 - Installing iw4x:
 
-Copy this script to your Modern Warfare 2 directly, and simply `./iw4x-updoot.sh`.
+* Copy this script to your Modern Warfare 2 directly
+* `chmod +x iw4x-updoot.sh`
+* `./iw4x-updoot.sh`
+* Wait for the script to finish running, and play.
 
 - Running cleanup:
 
