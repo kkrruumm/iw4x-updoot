@@ -52,6 +52,10 @@ cleanup() {
     info "removing rawfiles..."
     if [ -f "$rawlist_file" ] ; then
         while read line; do
+            # this shouldn't remove this entire directory, skip this entry
+            [ "$line" = 'zone/' ] &&
+                continue
+
             rm -Rf "$line" ||
                 die "failed to remove rawfiles with rawfile: ${line}"
         done < "$rawlist_file"
@@ -200,6 +204,10 @@ else
          # iw4x-updoot/rawlist, loop over the contents of that file and remove:
          info "removing old rawfiles..."
          while read line; do
+             # this shouldn't remove this entire directory, skip this entry
+             [ "$line" = 'zone/' ] &&
+                 continue
+
              rm -Rf "$line" ||
                  die "failed to remove rawfiles with rawfile: $line"
          done < "$rawlist_file"
