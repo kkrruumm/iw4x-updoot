@@ -9,20 +9,20 @@ You should probably be using the official client; this is here to ease my own su
 - A legitimate copy of the game, as per usual.
 
 # Usage
-- Installing iw4x:
+* Installing iw4x:
 
-* Copy this script to your Modern Warfare 2 directory
-* `chmod +x iw4x-updoot.sh`
-* `./iw4x-updoot.sh`
-* Wait for the script to finish running, and play.
+    - Copy this script to your Modern Warfare 2 directory
+    - `chmod +x iw4x-updoot.sh`
+    - `./iw4x-updoot.sh`
+    - Wait for the script to finish running, and play.
 
-- Running cleanup:
+* Running cleanup:
 
 If something broke warranting a reinstall, or if you want to wipe this and iw4x from your game, you may run `./iw4x-updoot.sh -c` from the Modern Warfare 2 directory, and the script will clean up all iw4x files as well as its own.
 
 You may then run `./iw4x-updoot.sh` again to perform an installation as if you had just installed MW2.
 
-- Updating:
+* Updating:
 
 Just run `./iw4x-updoot.sh`, the same as installation- this script knows where it is because it knows where it isn't.
 
