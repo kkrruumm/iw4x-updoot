@@ -4,7 +4,7 @@ POSIX sh installer/updater for [iw4x](https://iw4x.dev/)
 You should probably be using the official client; this is here to ease my own suffering.
 
 # Dependencies
-- `jq`, `grep`, `sed`, `unzip`, `sha256sum`, `curl`, `cut`
+- `jq`, `grep`, `sed`, `unzip`, `sha256sum`, `curl`
 - Any POSIX-capable shell.
 - A legitimate copy of the game, as per usual.
 
