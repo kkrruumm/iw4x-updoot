@@ -19,7 +19,7 @@ info() {
 
 # dependency check
 info "evaluating dependencies..."
-for i in jq grep sed unzip sha256sum curl cut ; do
+for i in jq grep sed unzip sha256sum curl ; do
     type "$i" > /dev/null ||
         { info "script dependencies not met: ${i}" ; exit 1 ; }
 done
@@ -59,7 +59,7 @@ cleanup() {
             rm -Rf "$line" ||
                 die "failed to remove rawfiles with rawfile: ${line}"
         done < "$rawlist_file"
-    elif [ ! -f "$rawlist_file" ] ; then
+    else
         info "rawlist_file: ${rawlist_file} does not exist, cannot clean up rawfiles."
     fi
 
@@ -67,6 +67,8 @@ cleanup() {
         info "removing iw4x-updoot directory: ${PWD}/iw4x-updoot..."
         rm -Rf "${PWD}/iw4x-updoot" ||
             die "removing iw4x-updoot directory: ${PWD}/iw4x-updoot has failed."
+    else
+        info "iw4x-updoot directory: ${PWD}/iw4x-updoot does not exist, cannot remove."
     fi
 
     exit 0
@@ -98,8 +100,9 @@ rawfiles_download() {
 
     info "comparing iw4x-rawfiles checksums..."
     checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("zip")) .digest')
-    checksum="${checksum#sha256:}"
-    local_checksum=$(sha256sum "${PWD}/release.zip" | cut -d " " -f 1)
+    checksum="${checksum#sha256:}" # removes sha256: from the beginning of the string
+    local_checksum=$(sha256sum "${PWD}/release.zip")
+    local_checksum="${local_checksum%% *}" # removes release.zip from the end of the string
 
     [ "$local_checksum" != "$checksum" ] &&
         die "iw4x-rawfiles checksum mismatch."
@@ -115,7 +118,8 @@ client_download() {
     info "comparing iw4x-client checksums..."
     checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("dll")) .digest')
     checksum="${checksum#sha256:}"
-    local_checksum=$(sha256sum "${PWD}/iw4x.dll" | cut -d " " -f 1)
+    local_checksum=$(sha256sum "${PWD}/iw4x.dll")
+    local_checksum="${local_checksum%% *}"
 
     [ "$local_checksum" != "$checksum" ] &&
         die "iw4x-client checksum mismatch."
