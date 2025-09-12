@@ -145,6 +145,15 @@ else
         # if client is outdated, update
         info "iw4x-client is outdated, updating..."
 
+        # delete old client
+        info "removing old client..."
+        rm "${PWD}/iw4x.dll" ||
+            die "failed to remove old client: ${PWD}/iw4x.dll"
+
+        # pull new client
+        client_download
+        info "client updated."
+
         # remove old client version from metadata
         info "updating metadata file..."
         temp=$(sed '/client_version:/d' "$metadata_file") # i really wish posix sed had -i
@@ -156,15 +165,6 @@ else
         # add new client version to metadata
         printf "%s\n" "client_version: ${client_version}" >> "$metadata_file" ||
             die "failed to add new client_version: ${client_version} to metadata file: ${metadata_file}"
-
-        # delete old client
-        info "removing old client..."
-        rm "${PWD}/iw4x.dll" ||
-            die "failed to remove old client: ${PWD}/iw4x.dll"
-
-        # pull new client
-        client_download
-        info "client updated."
     fi
 fi
 
@@ -190,18 +190,6 @@ else
          info "rawfiles_version: ${rawfiles_version}; iw4x-rawfiles are up to date."
      else
          info "iw4x-rawfiles are out of date, updating..."
-
-         info "updating metadata file..."
-         # remove old ver from metadata
-         temp=$(sed '/rawfiles_version:/d' "$metadata_file")
-         printf "%s\n" "$temp" > "$metadata_file" ||
-             die "failed to remove old rawfiles_version from metadata file: ${metadata_file}"
-
-         unset temp
-
-         # add new ver to metadata
-         printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
-             die "failed to add new rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
 
          # the most simple and catch-all way to update this is to just wipe the old rawfiles and place the new ones
          # if rawfiles have been installed before, the contents should have been kept in
@@ -230,6 +218,18 @@ else
          info "extracting rawfiles..."
          unzip -qq release.zip ||
              die "failed to extract rawfiles"
+
+         info "updating metadata file..."
+         # remove old ver from metadata
+         temp=$(sed '/rawfiles_version:/d' "$metadata_file")
+         printf "%s\n" "$temp" > "$metadata_file" ||
+             die "failed to remove old rawfiles_version from metadata file: ${metadata_file}"
+
+         unset temp
+
+         # add new ver to metadata
+         printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
+             die "failed to add new rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
      fi
 fi
 
