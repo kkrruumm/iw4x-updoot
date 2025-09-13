@@ -1,7 +1,5 @@
 # iw4x-updoot
-POSIX sh installer/updater for [iw4x](https://iw4x.dev/)
-
-You should probably be using the official client; this is here to ease my own suffering.
+POSIX sh installer/updater for iw4x
 
 # Dependencies
 - `jq`, `grep`, `sed`, `unzip`, `sha256sum`, `curl`
