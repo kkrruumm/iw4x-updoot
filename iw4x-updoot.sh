@@ -41,6 +41,14 @@ cleanup() {
         info "iw4x-client: ${PWD}/iw4x.dll does not appear to exist."
     fi
 
+    if [ -f "${PWD}/iw4x.exe" ] ; then
+        info "removing iw4x.exe: ${PWD}/iw4x.exe..."
+        rm "${PWD}/iw4x.exe" ||
+            die "failed to remove iw4x.exe."
+    else
+        info "iw4x.exe: ${PWD}/iw4x.exe does not appear to exist."
+    fi
+
     if [ -e "$PWD/release.zip" ] ; then
         info "removing iw4x-rawfiles archive: ${PWD}/release.zip..."
         rm "${PWD}/release.zip" ||
@@ -93,13 +101,16 @@ client_version=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X
 rawfiles_version=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.name')
 
 rawfiles_download() {
-    rawfiles_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r --compact-output '.assets[].browser_download_url' | grep ".zip")
+    rawfiles_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r --compact-output '.assets[].browser_download_url' | grep "release.zip")
+    executable_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r --compact-output '.assets[].browser_download_url' | grep "iw4x.exe")
     curl --silent -L -o release.zip "$rawfiles_url" ||
         die "failed to download iw4x-rawfiles: $rawfiles_url"
 
+    curl --silent -L -o iw4x.exe "$executable_url" ||
+        die "failed to download iw4x.exe from: $executable_url"
 
     info "comparing iw4x-rawfiles checksums..."
-    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("zip")) .digest')
+    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("release.zip")) .digest')
     checksum="${checksum#sha256:}" # removes sha256: from the beginning of the string
     local_checksum=$(sha256sum "${PWD}/release.zip")
     local_checksum="${local_checksum%% *}" # removes release.zip from the end of the string
@@ -107,16 +118,25 @@ rawfiles_download() {
     [ "$local_checksum" != "$checksum" ] &&
         die "iw4x-rawfiles checksum mismatch."
 
-    unset checksum local_checksum rawfiles_url
+    info "comparing iw4x.exe checksums..."
+    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("iw4x.exe")) .digest')
+    checksum="${checksum#sha256:}"
+    local_checksum=$(sha256sum "${PWD}/iw4x.exe")
+    local_checksum="${local_checksum%% *}"
+
+    [ "$local_checksum" != "$checksum" ] &&
+        die "iw4x.exe checksum mismatch."
+
+    unset checksum local_checksum rawfiles_url executable_url
 }
 
 client_download() {
-    client_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r --compact-output '.assets[].browser_download_url' | grep ".dll")
+    client_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r --compact-output '.assets[].browser_download_url' | grep "iw4x.dll")
     curl --silent -L -o iw4x.dll "$client_url" ||
         die "failed to download iw4x-client: $client_url"
 
     info "comparing iw4x-client checksums..."
-    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("dll")) .digest')
+    checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("iw4x.dll")) .digest')
     checksum="${checksum#sha256:}"
     local_checksum=$(sha256sum "${PWD}/iw4x.dll")
     local_checksum="${local_checksum%% *}"
@@ -207,6 +227,10 @@ else
          info "removing old rawfiles archive..."
          rm "${PWD}/release.zip" ||
              die "failed to remove old rawfiles archive: ${PWD}/rawfiles.zip"
+
+         info "removing old iw4x.exe..."
+         rm "${PWD}/iw4x.exe" ||
+             die "failed to remove old iw4x.exe: ${PWD}/iw4x.exe"
 
          info "downloading new rawfiles..."
          rawfiles_download
