@@ -90,8 +90,9 @@ while getopts "c" opts; do
     esac
 done
 
-[ -d "${PWD}/iw4x-updoot" ] ||
-    { mkdir "${PWD}/iw4x-updoot" || die "failed to create iw4x-updoot directory" ; }
+# create both needed directories at once
+[ -d "${PWD}/iw4x-updoot/iwd-temp" ] ||
+    { mkdir -p "${PWD}/iw4x-updoot/iwd-temp" || die "failed to create iw4x-updoot directory" ; }
 
 [ -f "$metadata_file" ] ||
     { touch "$metadata_file" || die "failed to create metadata file" ; }
@@ -127,7 +128,24 @@ rawfiles_download() {
     [ "$local_checksum" != "$checksum" ] &&
         die "iw4x.exe checksum mismatch."
 
-    unset checksum local_checksum rawfiles_url executable_url
+    # this being so fragmented is unbelievably annoying, cleanliness begone ig
+    for i in $(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r --compact-output '.assets[].browser_download_url' | grep ".*iwd") ; do
+        current_iwd="$i"
+        current_iwd_name="${i##*/}" # removes everything up until and including last / in path to get the individual file name
+        curl --silent -L -o "${PWD}/iw4x-updoot/iwd-temp/${current_iwd_name}" "$current_iwd" ||
+            die "downloading iwd file: $current_iwd has failed."
+
+        info "comparing iwd archive: ${current_iwd_name} checksums..."
+        checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("'"${current_iwd_name}"'")) .digest')
+        checksum="${checksum#sha256:}"
+        local_checksum=$(sha256sum "${PWD}/iw4x-updoot/iwd-temp/${current_iwd_name}")
+        local_checksum="${local_checksum%% *}"
+
+        [ "$local_checksum" != "$checksum" ] &&
+            die "${current_iwd_name} checksum mismatch."
+    done
+
+    unset checksum local_checksum rawfiles_url executable_url current_iwd current_iwd_name
 }
 
 client_download() {
@@ -200,6 +218,10 @@ if ! grep "rawfiles_version:" "$metadata_file" > /dev/null ; then
     unzip -qq release.zip ||
         die "failed to extract rawfiles"
 
+    info "installing iwd archives..."
+    mv "${PWD}"/iw4x-updoot/iwd-temp/* "${PWD}/iw4x/" ||
+        die "failed to install iwd archives"
+
     info "writing rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}..."
     printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
         die "failed to add rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
@@ -250,6 +272,10 @@ else
              die "failed to remove old rawfiles_version from metadata file: ${metadata_file}"
 
          unset temp
+
+         info "installing iwd archives..."
+         mv "${PWD}"/iw4x-updoot/iwd-temp/* "${PWD}/iw4x/" ||
+             die "failed to install IWD archives"
 
          # add new ver to metadata
          printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
