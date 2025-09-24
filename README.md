@@ -1,5 +1,5 @@
 # iw4x-updoot
-POSIX sh installer/updater for iw4x
+POSIX sh installer/updater for [iw4x](https://iw4x.io)
 
 # Dependencies
 - `jq`, `grep`, `sed`, `unzip`, `sha256sum`, `curl`
