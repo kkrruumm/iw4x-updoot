@@ -14,14 +14,12 @@ POSIX sh installer/updater for [iw4x](https://iw4x.io)
     - `./iw4x-updoot.sh`
     - Wait for the script to finish running, and play.
 
-# Running cleanup:
-
+# Running cleanup
 If something broke warranting a reinstall, or if you want to wipe this and iw4x from your game, you may run `./iw4x-updoot.sh -c` from the Modern Warfare 2 directory, and the script will clean up all iw4x files as well as its own.
 
 You may then run `./iw4x-updoot.sh` again to perform an installation as if you had just installed MW2.
 
-# Updating:
-
+# Updating
 Just run `./iw4x-updoot.sh`, the same as installation- this script knows where it is because it knows where it isn't.
 
 This script will not update *itself*. If something breaks, or if new features have been added, you will have to manually swap out `iw4x-updoot.sh` with a newer version.
