@@ -1,6 +1,8 @@
 # iw4x-updoot
 POSIX sh installer/updater for [iw4x](https://iw4x.io)
 
+This script is portable, and should work successfully on Linux, the BSD family (though, ones that have wine and can therefore run MW2), and MacOS.
+
 # Dependencies
 - `jq`, `grep`, `sed`, `unzip`, `sha256sum`, `curl`
 - Any POSIX-capable shell.
