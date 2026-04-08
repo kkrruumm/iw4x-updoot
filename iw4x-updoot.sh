@@ -183,52 +183,55 @@ if ! grep "rawfiles_version:" "$metadata_file" > /dev/null ; then
     printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
         die "failed to add rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
 
+    rm "${PWD}/release.zip"
 else
      # check if rawfiles are outdated
      if grep "rawfiles_version: ${rawfiles_version}" "$metadata_file" > /dev/null ; then
          info "rawfiles_version: ${rawfiles_version}; iw4x-rawfiles are up to date."
      else
-         info "iw4x-rawfiles are out of date, updating..."
+        info "iw4x-rawfiles are out of date, updating..."
 
-         # the most simple and catch-all way to update this is to just wipe the old rawfiles and place the new ones
-         # if rawfiles have been installed before, the contents should have been kept in
-         # iw4x-updoot/rawlist, loop over the contents of that file and remove:
-         info "removing old rawfiles..."
-         while read line; do
-             # this shouldn't remove this entire directory, skip this entry
-             [ "$line" = 'zone/' ] &&
-                 continue
+        # the most simple and catch-all way to update this is to just wipe the old rawfiles and place the new ones
+        # if rawfiles have been installed before, the contents should have been kept in
+        # iw4x-updoot/rawlist, loop over the contents of that file and remove:
+        info "removing old rawfiles..."
+        while read line; do
+            # this shouldn't remove this entire directory, skip this entry
+            [ "$line" = 'zone/' ] &&
+                continue
 
-             rm -Rf "$line" ||
-                 die "failed to remove rawfiles with rawfile: $line"
-         done < "$rawlist_file"
+            rm -Rf "$line" ||
+                die "failed to remove rawfiles with rawfile: $line"
+        done < "$rawlist_file"
 
-         info "removing old rawfiles archive..."
-         rm "${PWD}/release.zip" ||
-             die "failed to remove old rawfiles archive: ${PWD}/rawfiles.zip"
+        info "removing old rawfiles archive..."
+        rm "${PWD}/release.zip" ||
+            die "failed to remove old rawfiles archive: ${PWD}/rawfiles.zip"
 
-         info "downloading new rawfiles..."
-         rawfiles_download
+        info "downloading new rawfiles..."
+        rawfiles_download
 
-         info "updating rawfiles list..."
-         unzip -Z1 release.zip > "$rawlist_file" ||
-             die "failed to add new rawfiles list to rawlist_file: $rawlist_file"
+        info "updating rawfiles list..."
+        unzip -Z1 release.zip > "$rawlist_file" ||
+            die "failed to add new rawfiles list to rawlist_file: $rawlist_file"
 
-         info "extracting rawfiles..."
-         unzip -qq release.zip ||
-             die "failed to extract rawfiles"
+        info "extracting rawfiles..."
+        unzip -qq release.zip ||
+            die "failed to extract rawfiles"
 
-         info "updating metadata file..."
-         # remove old ver from metadata
-         temp=$(sed '/rawfiles_version:/d' "$metadata_file")
-         printf "%s\n" "$temp" > "$metadata_file" ||
-             die "failed to remove old rawfiles_version from metadata file: ${metadata_file}"
+        info "updating metadata file..."
+        # remove old ver from metadata
+        temp=$(sed '/rawfiles_version:/d' "$metadata_file")
+        printf "%s\n" "$temp" > "$metadata_file" ||
+            die "failed to remove old rawfiles_version from metadata file: ${metadata_file}"
 
-         unset temp
+        unset temp
 
          # add new ver to metadata
-         printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
-             die "failed to add new rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
+        printf "%s\n" "rawfiles_version: ${rawfiles_version}" >> "$metadata_file" ||
+            die "failed to add new rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
+
+        rm "${PWD}/release.zip"
      fi
 fi
 
