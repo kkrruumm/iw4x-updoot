@@ -26,6 +26,7 @@ done
 
 metadata_file="${PWD}/iw4x-updoot/versions"
 rawlist_file="${PWD}/iw4x-updoot/rawlist"
+dlclist_file="${PWD}/iw4x-updoot/dlclist"
 
 # TODO: this should probably have better verification but it's fine
 [ ! -x "${PWD}/iw4mp.exe" ] &&
@@ -63,6 +64,21 @@ cleanup() {
         info "rawlist_file: ${rawlist_file} does not exist, cannot clean up rawfiles."
     fi
 
+    info "removing DLCs..."
+    if [ -f "$dlclist_file" ] ; then
+        while read line; do
+            rm "$line" ||
+                die "failed to remove DLCs with DLC: ${line}"
+        done < "$dlclist_file"
+
+        if [ -f "${PWD}/iw4x-updoot/dlcs.json" ]; then
+            rm "${PWD}/iw4x-updoot/dlcs.json" ||
+                die "failed to remove DLCs with DLC list file: ${PWD}/iw4x-updoot/dlcs.json"
+        fi
+    else
+        info "dlclist_file: ${dlclist_file} does not exist, cannot clean up DLCs."
+    fi
+
     if [ -d "${PWD}/iw4x-updoot" ] ; then
         info "removing iw4x-updoot directory: ${PWD}/iw4x-updoot..."
         rm -Rf "${PWD}/iw4x-updoot" ||
@@ -74,19 +90,22 @@ cleanup() {
     exit 0
 }
 
-# this is only here for cleanup
-while getopts "c" opts; do
+while getopts "cd" opts; do
     case "${opts}" in
         c) cleanup ;;
+        d) install_dlc="true" ;;
         *) printf "%s\n" "unrecognized flag: ${OPTARG}" && exit 1 ;;
     esac
 done
 
-[ -d "${PWD}/iw4x-updoot" ] ||
-    { mkdir "${PWD}/iw4x-updoot" || die "failed to create iw4x-updoot directory" ; }
+[ -d "${PWD}/iw4x-updoot/temp" ] ||
+    { mkdir -p "${PWD}/iw4x-updoot/temp" || die "failed to create iw4x-updoot directory" ; }
 
 [ -f "$metadata_file" ] ||
     { touch "$metadata_file" || die "failed to create metadata file" ; }
+
+[ -f "$dlclist_file" ] ||
+    { touch "$dlclist_file" || die "failed to create dlclist file" ; }
 
 # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#list-releases-for-a-repository
 client_version=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r '.name')
@@ -94,8 +113,11 @@ rawfiles_version=$(curl --silent -L -H "Accept: application/vnd.github+json" -H 
 
 rawfiles_download() {
     rawfiles_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r --compact-output '.assets[].browser_download_url | select(test("release.zip"))')
-    curl --silent -L -o release.zip "$rawfiles_url" ||
+    if ! curl -# -L -o release.zip "$rawfiles_url" ; then
         die "failed to download iw4x-rawfiles: $rawfiles_url"
+    else
+        printf "\033[1A\033[2K"
+    fi
 
     info "comparing iw4x-rawfiles checksums..."
     checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-rawfiles/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("release.zip")) .digest')
@@ -111,8 +133,11 @@ rawfiles_download() {
 
 client_download() {
     client_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r --compact-output '.assets[].browser_download_url | select(test("iw4x.dll"))')
-    curl --silent -L -o iw4x.dll "$client_url" ||
+    if ! curl --silent -L -o iw4x.dll "$client_url" ; then
         die "failed to download iw4x-client: $client_url"
+    else
+        printf "\033[1A\033[2K"
+    fi
 
     info "comparing iw4x-client checksums..."
     checksum=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r '.assets[] | select(.browser_download_url | test ("iw4x.dll")) .digest')
@@ -124,6 +149,48 @@ client_download() {
         die "iw4x-client checksum mismatch."
 
     unset checksum local_checksum client_url
+}
+
+dlc_download() {
+    for i in $(jq -r '.files[].path | select(test(".iwd"))' "${PWD}/iw4x-updoot/dlcs.json") ; do
+        current_dlc_name="${i##*/}" # removes everything up until and including the last / in path to get individual file name
+        info "downloading DLC: ${current_dlc_name}"
+        if ! curl -# -L -o "${PWD}/main/${current_dlc_name}" "https://cdn.iw4x.io/${i}" ; then
+            die "downloading DLC archive: ${i} has failed"
+        else
+            printf "\033[2A\033[2K" # move up one line and remove it (gets rid of progress bar once it hits 100%)
+        fi
+
+        dlc_checksum=$(jq -r '.files[] | select(.asset_name == "'"$current_dlc_name"'") | .blake3' "${PWD}/iw4x-updoot/dlcs.json")
+        local_dlc_checksum=$(b3sum "${PWD}/main/${current_dlc_name}")
+        local_dlc_checksum="${local_dlc_checksum%% *}" # remove space and filename from end of checksum output
+
+        [ "$dlc_checksum" != "$local_dlc_checksum" ] &&
+            die "${current_dlc_name} checksum mismatch."
+
+        printf "%s\n" "main/${current_dlc_name}" >> "$dlclist_file"
+    done
+
+    for i in $(jq -r '.files[].path | select(test(".ff"))' "${PWD}/iw4x-updoot/dlcs.json") ; do
+        current_dlc_name="${i##*/}"
+        info "downloading DLC: ${current_dlc_name}"
+        if ! curl -# -L -o "${PWD}/zone/dlc/${current_dlc_name}" "https://cdn.iw4x.io/${i}" ; then
+            die "downloading DLC archive: ${i} has failed"
+        else
+            printf "\033[2A\033[2K"
+        fi
+
+        dlc_checksum=$(jq -r '.files[] | select(.asset_name == "'"$current_dlc_name"'") | .blake3' "${PWD}/iw4x-updoot/dlcs.json")
+        local_dlc_checksum=$(b3sum "${PWD}/zone/dlc/${current_dlc_name}")
+        local_dlc_checksum="${local_dlc_checksum%% *}"
+
+        [ "$dlc_checksum" != "$local_dlc_checksum" ] &&
+            die "${current_dlc_name} checksum mismatch."
+
+        printf "%s\n" "zone/dlc/${current_dlc_name}" >> "$dlclist_file"
+    done
+
+    unset current_dlc_name dlc_checksum local_dlc_checksum i
 }
 
 if ! grep "client_version:" "$metadata_file" > /dev/null ; then
@@ -185,10 +252,10 @@ if ! grep "rawfiles_version:" "$metadata_file" > /dev/null ; then
 
     rm "${PWD}/release.zip"
 else
-     # check if rawfiles are outdated
-     if grep "rawfiles_version: ${rawfiles_version}" "$metadata_file" > /dev/null ; then
-         info "rawfiles_version: ${rawfiles_version}; iw4x-rawfiles are up to date."
-     else
+    # check if rawfiles are outdated
+    if grep "rawfiles_version: ${rawfiles_version}" "$metadata_file" > /dev/null ; then
+        info "rawfiles_version: ${rawfiles_version}; iw4x-rawfiles are up to date."
+    else
         info "iw4x-rawfiles are out of date, updating..."
 
         # the most simple and catch-all way to update this is to just wipe the old rawfiles and place the new ones
@@ -198,10 +265,10 @@ else
         while read line; do
             # this shouldn't remove this entire directory, skip this entry
             [ "$line" = 'zone/' ] &&
-                continue
+                continuetype "$i" > /dev/null
 
             rm -Rf "$line" ||
-                die "failed to remove rawfiles with rawfile: $line"
+                die "failed to remove rawfiles with rawfile: ${line}"
         done < "$rawlist_file"
 
         info "removing old rawfiles archive..."
@@ -232,7 +299,50 @@ else
             die "failed to add new rawfiles_version: ${rawfiles_version} to metadata file: ${metadata_file}"
 
         rm "${PWD}/release.zip"
-     fi
+    fi
+fi
+
+if ! grep 'dlc' "$metadata_file" > /dev/null && [ "$install_dlc" = "true" ] ; then
+    type b3sum > /dev/null ||
+        die "script dependencies not met: b3sum, cannot download DLCs"
+
+    # this json file has all of the dlc paths and checksums
+    info "downloading DLC list from https://cdn.iw4x.io/update.json..."
+    curl --silent -L -o "${PWD}/iw4x-updoot/dlcs.json" https://cdn.iw4x.io/update.json ||
+        die "downloading dlcs.json has failed"
+
+    info "downloading DLCs and comparing checksums..."
+    dlc_download
+
+    info "marking DLCs enabled in metadata file: ${metadata_file}"
+    printf "%s\n" 'dlc' >> "$metadata_file" ||
+        die "failed to write dlc to metadata file: ${metadata_file}"
+else
+    type b3sum > /dev/null ||
+        die "script dependencies not met: b3sum, cannot download DLCs"
+
+    curl --silent -L -o "${PWD}/iw4x-updoot/temp/dlcs.json" https://cdn.iw4x.io/update.json ||
+        die "downloading dlcs.json has failed"
+
+    current_dlclist_checksum=$(b3sum "${PWD}/iw4x-updoot/dlcs.json")
+    new_dlclist_checksum=$(b3sum "${PWD}/iw4x-updoot/temp/dlcs.json")
+    new_dlclist_checksum="${new_dlclist_checksum%% *}"
+
+    if [ "$current_dlclist_checksum" != "$new_dlclist_checksum" ] ; then
+        info "iw4x DLCs outdated, updating..."
+        : > "$dlclist_file" # clear out file
+        while read line; do
+            rm "$line" ||
+                die "failed to remove DLCs with DLC: ${line}"
+        done < "$dlclist_file"
+
+        mv "${PWD}/iw4x-updoot/temp/dlcs.json" "${PWD}/iw4x-updoot/dlcs.json" ||
+            die "failed to move new DLC list to iw4x-updoot"
+
+        dlc_download
+    else
+        info "iw4x DLCs are up to date."
+    fi
 fi
 
 info "done."

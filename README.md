@@ -4,7 +4,7 @@ POSIX sh installer/updater for [iw4x](https://iw4x.io)
 This script is portable, and should work successfully on Linux, the BSD family (though, ones that have wine and can therefore run MW2), and MacOS.
 
 # Dependencies
-- `jq`, `grep`, `sed`, `unzip`, `sha256sum`, `curl`
+- `jq`, `grep`, `sed`, `unzip`, `sha256sum`, `curl`, `b3sum` (only for DLCs)
 - Any POSIX-capable shell.
 - A legitimate copy of the game, as per usual.
 
@@ -15,6 +15,10 @@ This script is portable, and should work successfully on Linux, the BSD family (
     - `chmod +x iw4x-updoot.sh`
     - `./iw4x-updoot.sh`
     - Wait for the script to finish running, and play.
+
+* Installing/updating with iw4x DLCs:
+
+    - Same as above, except invoke with `./iw4x-updoot.sh -d`
 
 # Running cleanup
 If something broke warranting a reinstall, or if you want to wipe this and iw4x from your game, you may run `./iw4x-updoot.sh -c` from the Modern Warfare 2 directory, and the script will clean up all iw4x files as well as its own.
