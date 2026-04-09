@@ -133,7 +133,7 @@ rawfiles_download() {
 
 client_download() {
     client_url=$(curl --silent -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/iw4x/iw4x-client/releases/latest | jq -r --compact-output '.assets[].browser_download_url | select(test("iw4x.dll"))')
-    if ! curl --silent -L -o iw4x.dll "$client_url" ; then
+    if ! curl -# -L -o iw4x.dll "$client_url" ; then
         die "failed to download iw4x-client: $client_url"
     else
         printf "\033[1A\033[2K"
