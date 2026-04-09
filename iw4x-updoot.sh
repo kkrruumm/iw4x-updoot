@@ -317,7 +317,7 @@ if ! grep 'dlc' "$metadata_file" > /dev/null && [ "$install_dlc" = "true" ] ; th
     info "marking DLCs enabled in metadata file: ${metadata_file}"
     printf "%s\n" 'dlc' >> "$metadata_file" ||
         die "failed to write dlc to metadata file: ${metadata_file}"
-else
+elif [ "$install_dlc" = "true" ]; then
     type b3sum > /dev/null ||
         die "script dependencies not met: b3sum, cannot download DLCs"
 
@@ -325,6 +325,7 @@ else
         die "downloading dlcs.json has failed"
 
     current_dlclist_checksum=$(b3sum "${PWD}/iw4x-updoot/dlcs.json")
+    current_dlclist_checksum="${current_dlclist_checksum%% *}"
     new_dlclist_checksum=$(b3sum "${PWD}/iw4x-updoot/temp/dlcs.json")
     new_dlclist_checksum="${new_dlclist_checksum%% *}"
 
