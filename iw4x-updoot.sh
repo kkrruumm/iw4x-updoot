@@ -265,7 +265,7 @@ else
         while read line; do
             # this shouldn't remove this entire directory, skip this entry
             [ "$line" = 'zone/' ] &&
-                continuetype "$i" > /dev/null
+                continue
 
             rm -Rf "$line" ||
                 die "failed to remove rawfiles with rawfile: ${line}"
