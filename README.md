@@ -1,3 +1,5 @@
+As of 2026-09-03, IW has pushed an update to the Steam copy of MW2 that updates it to 64 bit. For the time being, you must either not update your game or use steamdepot to download a compatible release to play IW4x.
+
 # iw4x-updoot
 POSIX sh installer/updater for [iw4x](https://iw4x.io)
 
