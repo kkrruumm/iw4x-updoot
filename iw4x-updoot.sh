@@ -102,6 +102,9 @@ done
     if ! command -v b3sum > /dev/null ; then
         die "script dependencies not met: b3sum, cannot download DLCs"
     fi
+
+    [ -d "${PWD}/zone/dlc" ] ||
+        { mkdir -p "${PWD}/zone/dlc" || die "failed to create dlc directory" ; }
 }
 
 [ -d "${PWD}/iw4x-updoot/temp" ] ||
