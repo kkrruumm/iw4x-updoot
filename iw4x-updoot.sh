@@ -104,7 +104,7 @@ done
     fi
 
     [ -d "${PWD}/zone/iw4x/x86/dlc" ] ||
-        { mkdir -p "${PWD}/zone/iw4x/dlc" || die "failed to create dlc directory" ; }
+        { mkdir -p "${PWD}/zone/iw4x/x86/dlc" || die "failed to create dlc directory" ; }
 }
 
 [ -d "${PWD}/main/iw4x/x86" ] ||
