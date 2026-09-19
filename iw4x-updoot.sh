@@ -103,9 +103,12 @@ done
         die "script dependencies not met: b3sum, cannot download DLCs"
     fi
 
-    [ -d "${PWD}/zone/dlc" ] ||
-        { mkdir -p "${PWD}/zone/dlc" || die "failed to create dlc directory" ; }
+    [ -d "${PWD}/zone/iw4x/x86/dlc" ] ||
+        { mkdir -p "${PWD}/zone/iw4x/dlc" || die "failed to create dlc directory" ; }
 }
+
+[ -d "${PWD}/main/iw4x/x86" ] ||
+    { mkdir -p "${PWD}/main/iw4x/x86" || die "failed to create main directory" ; }
 
 [ -d "${PWD}/iw4x-updoot/temp" ] ||
     { mkdir -p "${PWD}/iw4x-updoot/temp" || die "failed to create iw4x-updoot directory" ; }
@@ -174,8 +177,8 @@ dlc_download() {
         current_dlc_name="${i##*/}" # removes everything up until and including the last / in path to get individual file name
 
         case "$current_dlc_name" in
-            *.iwd) dest="main/${current_dlc_name}" ;;
-            *.ff) dest="zone/dlc/${current_dlc_name}" ;;
+            *.iwd) dest="main/iw4x/x86/${current_dlc_name}" ;;
+            *.ff) dest="zone/iw4x/x86/dlc/${current_dlc_name}" ;;
         esac
 
         info "downloading DLC: ${current_dlc_name}"
@@ -244,7 +247,7 @@ if ! grep "rawfiles_version:" "$metadata_file" > /dev/null ; then
     rawfiles_download
 
     info "creating rawfiles list..."
-    unzip -Z1 release.zip > "$rawlist_file" ||
+    unzip -l release.zip | awk '$1 ~ /^[0-9]+$/ {$1=$2=$3=""; sub(/^ +/,""); print}' > "$rawlist_file" ||
         die "failed to write rawfiles list to rawlist_file: $rawlist_file"
 
     info "extracting rawfiles..."
