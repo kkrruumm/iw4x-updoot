@@ -279,9 +279,11 @@ else
                 die "failed to remove rawfiles with rawfile: ${line}"
         done < "$rawlist_file"
 
-        info "removing old rawfiles archive..."
-        rm "${PWD}/release.zip" ||
-            die "failed to remove old rawfiles archive: ${PWD}/release.zip"
+        [ -e "${PWD}/release.zip" ] && {
+            info "removing old rawfiles archive..."
+            rm "$PWD/release.zip" ||
+                die "failed to remove old rawfiles archive: ${PWD}/release.zip"
+        }
 
         info "downloading new rawfiles..."
         rawfiles_download
